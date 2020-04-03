@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-functions.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css" />
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+
+    <script>
+        brandName = "amp-firebase-login";
+        cookieName = "session";
+        window.onload = function () {
+            document.getElementById('brand-name').textContent = brandName;
+        };
+
+        function closeWindow() {
+            if (window.opener) {
+                window.opener.location.reload();
+            }
+            window.close();
+        }
+
+        function signOut() {
+            firebase.auth().signOut().then(function (value) {
+                var xhr = new XMLHttpRequest();
+                //xhr.open("POST", "http://localhost:5001/amp-firebase-login/us-central1/sessionLogout", false);
+                xhr.open("POST", "https://us-central1-amp-firebase-login.cloudfunctions.net/sessionLogout", true);
+                xhr.withCredentials = true;
+                xhr.onreadystatechange = function () {
+                    // In local files, status is 0 upon success in Mozilla Firefox
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        var status = xhr.status;
+                        if (status === 0 || (status >= 200 && status < 400)) {
+                            closeWindow();
+                        } else {
+                            // Oh no! There has been an error with the request!
+                        }
+                    }
+                };
+                xhr.send('');
+            });
+        }
+
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDU4MEy1-ViLA29q-GJdiZrcXa58NFtFsY",
+            authDomain: "amp-firebase-login.firebaseapp.com",
+            databaseURL: "https://amp-firebase-login.firebaseio.com",
+            projectId: "amp-firebase-login",
+            storageBucket: "amp-firebase-login.appspot.com",
+            messagingSenderId: "747655698670",
+            appId: "1:747655698670:web:8728e675069a0d69bebbff"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        if (window.location.href.indexOf('localhost') > -1) {
+            firebase.functions().useFunctionsEmulator('http://localhost:5001');
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        // FirebaseUI config.
+        var uiConfig = {
+            signInSuccessUrl: 'http://localhost:5000',
+            signInOptions: [
+                // Leave the lines as is for the providers you want to offer your users.
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+                // firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+                // firebase.auth.GithubAuthProvider.PROVIDER_ID,
+                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                firebase.auth.PhoneAuthProvider.PROVIDER_ID,
+                // firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID
+            ],
+            // tosUrl and privacyPolicyUrl accept either url string or a callback
+            // function.
+            // Terms of service url/callback.
+            tosUrl: 'http://localhost:5000/terms-of-service',
+            // Privacy policy url/callback.
+            privacyPolicyUrl: function () {
+                window.location.assign('http://localhost:5000/privacy-policy');
+            },
+            autoUpgradeAnonymousUsers: true,
+            immediateFederatedRedirect: false,
+            callbacks: {
+                signInSuccessWithAuthResult: function (res) {
+                    //TODO set csrf
+                    // const csrfToken = getCookie('csrfToken');
+                    // var csrfToken;
+                    // postIdTokenToSessionLogin(res.credential.idToken, csrfToken).then((value)=>{
+                    //
+                    //     console.log('RRR',value, res)
+                    // });
+                    return false;
+                },
+                // signInFailure callback must be provided to handle merge conflicts which
+                // occur when an existing credential is linked to an anonymous user.
+                signInFailure: function (error) {
+                    // For merge conflicts, the error.code will be
+                    // 'firebaseui/anonymous-upgrade-merge-conflict'.
+                    if (error.code != 'firebaseui/anonymous-upgrade-merge-conflict') {
+                        return Promise.resolve();
+                    }
+                    // The credential the user tried to sign in with.
+                    var cred = error.credential;
+                    // Copy data from anonymous user to permanent user and delete anonymous
+                    // user.
+                    // ...
+                    // Finish sign-in after data is copied.
+                    return firebase.auth().signInWithCredential(cred);
+                }
+            }
+        };
+        // Initialize the FirebaseUI Widget using Firebase.
+        let auth = firebase.auth();
+
+        function getCookie(name) {
+            if (!document.cookie) {
+                return null;
+            }
+            const vals = document.cookie.split(';').map(v => v.split('='));
+            let valPair = vals.find(vpArr => vpArr[0].trim() === name);
+            return valPair ? valPair[1] : null;
+        }
+
+        function postIdTokenToSessionLogin(idToken, csrfToken) {
+            console.log('POSTING TO SESSION')
+            var xhr = new XMLHttpRequest();
+            // xhr.open("POST", "http://localhost:5001/amp-firebase-login/us-central1/sessionLogin", false);
+            xhr.open("POST", "https://us-central1-amp-firebase-login.cloudfunctions.net/sessionLogin", true);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.withCredentials = true;
+            xhr.onreadystatechange = function () {
+                // In local files, status is 0 upon success in Mozilla Firefox
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    var status = xhr.status;
+                    if (status === 0 || (status >= 200 && status < 400)) {
+                        closeWindow();
+                    } else {
+                        // Oh no! There has been an error with the request!
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({
+                data: {
+                    idToken: idToken,
+                    csrfToken: csrfToken
+                }
+            }));
+        }
+
+        function displayLoginScreen() {
+            document.getElementById('sign-in').style = 'display:block;';
+            document.getElementById('sign-out').style = 'display:none;';
+            document.getElementById('sign-in-status').textContent = 'sign in';
+            document.getElementById('account-details').textContent = 'null';
+
+            try {
+                var ui = new firebaseui.auth.AuthUI(auth);
+                // The start method will wait until the DOM is loaded.
+                ui.start('#firebaseui-auth-container', uiConfig);
+            } catch (e) {
+                console.log('ui err', e.message)
+            }
+        }
+
+        function displayUserData(user) {
+            document.getElementById('sign-out').style = 'display:block;';
+            document.getElementById('sign-in').style = 'display:none;';
+            var displayName = user.displayName;
+            var email = user.email;
+            var emailVerified = user.emailVerified;
+            var photoURL = user.photoURL;
+            var uid = user.uid;
+            var phoneNumber = user.phoneNumber;
+            var providerData = user.providerData;
+            document.getElementById('sign-in-status').textContent = 'signed in';
+            document.getElementById('account-details').textContent = JSON.stringify({
+                displayName: displayName,
+                email: email,
+                emailVerified: emailVerified,
+                photoURL: photoURL,
+                uid: uid
+            }, null, '  ');
+        }
+
+        function displayLoginSessionScreen(user) {
+            // TODO when user is logged in with account but no cookie session exists
+            displayUserData(user)
+            user.getIdToken(true).then(function (idToken) {
+                //TODO get csrf
+                const csrfToken = getCookie('csrfToken');
+                postIdTokenToSessionLogin(idToken, csrfToken)
+            });
+        }
+
+        function displayLogOutScreen(user) {
+            displayUserData(user)
+        }
+
+        auth.onAuthStateChanged(function (user) {
+            if (user) {
+                var xhr = new XMLHttpRequest();
+                // xhr.open("POST", "http://localhost:5001/amp-firebase-login/us-central1/sessionLogin", false);
+                xhr.open("GET", "https://us-central1-amp-firebase-login.cloudfunctions.net/loggedin", true);
+                xhr.withCredentials = true;
+                xhr.onreadystatechange = function () {
+                    // In local files, status is 0 upon success in Mozilla Firefox
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        var status = xhr.status;
+                        if (status === 0 || (status >= 200 && status < 400)) {
+                            var res = JSON.parse(xhr.responseText);
+                            console.log('IS SESSION IN=', res)
+                            if (res.loggedIn !== true) {
+                                displayLoginSessionScreen(user);
+                            } else {
+                                displayLogOutScreen(user);
+                            }
+                        } else {
+                            // Oh no! There has been an error with the request!
+                            alert('Error getting login status.')
+                        }
+                    }
+                };
+                xhr.send();
+            } else {
+                // User is signed out.
+                displayLoginScreen()
+            }
+        });
+
+    </script>
+</head>
+
+<body>
+    <!-- The surrounding HTML is left untouched by FirebaseUI.
+     Your app may use that space for branding, controls and other customizations.-->
+    <h1 style="text-align: center"><span id="brand-name"></span> <span id="sign-in-status"></span></h1>
+
+    <div id="sign-in" style="display: none;">
+        <div id="firebaseui-auth-container"></div>
+    </div>
+    <div id="sign-out" style="display: none;">
+        <div id="account-details"></div>
+        <button onclick="signOut();">Sign out</button>
+    </div>
+
+</body>
+
+</html>
